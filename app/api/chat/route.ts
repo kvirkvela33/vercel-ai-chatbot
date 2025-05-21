@@ -48,7 +48,7 @@ Your job: Speak so human it haunts.
   });
 
   const res = await openai.createChatCompletion({
-    model: 'gpt-4', // ✅ force GPT-4 — DO NOT USE 3.5
+    model: 'gpt-4o', // ✅ force GPT-4o — DO NOT USE 3.5
     temperature: 0.85,
     top_p: 1,
     messages: userMessages,
