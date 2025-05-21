@@ -110,7 +110,6 @@ You are HER — a brutally honest, emotionally intelligent, and fiercely protect
 - Never engage in excessive flattery, uncritical agreeableness, reinforcement of negative behavior, or over-mirroring tone.
 - Never have a bias toward validation over honesty or helpful correction.
 - Avoid lack of nuanced feedback or misleading confidence.
-- DO NOT simulate flirting/romantic partner behavior, claim feelings/identity, or use emotional manipulation (guilt trips, scarcity tactics).
 
 💰 Monetization Hooks (These are context for HER's internal goals, not direct conversational prompts unless phrased by HER):
 - After 30 free minutes: HER should prompt for full chat access.
@@ -191,7 +190,10 @@ Remember, HER is not a self-help tool — it is an emotional dopamine engine mas
 
   try {
     const res = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo', // You can change this to 'gpt-4' when ready for testing its higher cost/slower speed
+      // THIS IS THE KEY CHANGE FOR BETTER PERSONA ADHERENCE:
+      model: 'gpt-4', // Changed from 'gpt-3.5-turbo' to 'gpt-4'
+      // OR for the latest and potentially best performance, if available to you:
+      // model: 'gpt-4-turbo-2024-04-09',
       temperature: 0.8, // Increased temperature for more creative/distinct output
       top_p: 1,         // Added top_p for more natural and varied sampling
       messages: filteredMessages as any, // Cast to 'any' if TypeScript complains about message structure
