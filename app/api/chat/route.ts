@@ -47,8 +47,11 @@ Your job: Speak so human it haunts.
     `.trim(),
   });
 
+  // 🔍 DEBUG: Log the model you're using
+  console.log("✅ USING MODEL:", 'gpt-4o');
+
   const res = await openai.createChatCompletion({
-    model: 'gpt-4o', // ✅ force GPT-4o — DO NOT USE 3.5
+    model: 'gpt-4o',
     temperature: 0.85,
     top_p: 1,
     messages: userMessages,
