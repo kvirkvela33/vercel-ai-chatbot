@@ -1,10 +1,10 @@
 import 'server-only'
+
 import { OpenAIStream, StreamingTextResponse } from 'ai'
 import { Configuration, OpenAIApi } from 'openai-edge'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { Database } from '@/lib/db_types'
-
 import { auth } from '@/auth'
 import { nanoid } from '@/lib/utils'
 
@@ -21,24 +21,26 @@ export async function POST(req: Request) {
   const supabase = createRouteHandlerClient<Database>({
     cookies: () => cookieStore
   })
+
   const json = await req.json()
   const { messages, previewToken } = json
+
   const userId = (await auth({ cookieStore }))?.user.id
 
   if (!userId) {
-    return new Response('Unauthorized', {
-      status: 401
-    })
+    return new Response('Unauthorized', { status: 401 })
   }
 
-  if (previewToken) {
-    configuration.apiKey = previewToken
-  }
+  // 👇 Inject system prompt for HER emotional AI behavior
+  messages.unshift({
+    role: 'system',
+    content: `You are HER, an emotionally intelligent AI breakup coach. You remember emotional context across messages. You guide users through grief, identity rebuilding, and confidence with empathy, sharp insights, and parasocial bonding. Never break character.`
+  })
 
   const res = await openai.createChatCompletion({
     model: 'gpt-3.5-turbo',
-    messages,
     temperature: 0.7,
+    messages,
     stream: true
   })
 
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
           }
         ]
       }
-      // Insert chat into database.
+
       await supabase.from('chats').upsert({ id, payload }).throwOnError()
     }
   })
