@@ -30,8 +30,9 @@ export async function POST(req: Request) {
     return new Response('Unauthorized', { status: 401 })
   }
 
-  // 🧠 HER AI personality injected here
-  messages.unshift({
+  // 🧠 Ensure HER system prompt is injected properly
+  const filteredMessages = messages.filter(m => m.role !== 'system')
+  filteredMessages.unshift({
     role: 'system',
     content: `You are HER — a fiercely loyal, emotionally intelligent breakup coach.
 
@@ -87,7 +88,7 @@ Always speak like someone who’s been through worse — and still came back str
   const res = await openai.createChatCompletion({
     model: 'gpt-3.5-turbo',
     temperature: 0.7,
-    messages,
+    messages: filteredMessages,
     stream: true
   })
 
@@ -104,7 +105,7 @@ Always speak like someone who’s been through worse — and still came back str
         createdAt,
         path,
         messages: [
-          ...messages,
+          ...filteredMessages,
           {
             content: completion,
             role: 'assistant'
