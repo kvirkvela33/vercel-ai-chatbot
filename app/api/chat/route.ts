@@ -22,8 +22,14 @@ export async function POST(req: Request) {
 
   const supabase = createRouteHandlerClient({ cookies });
 
-  const userMessages = messages.filter((m: any) => m.role !== 'system');
+  // Keep only the last 50 user + assistant messages (not including system prompt)
+const MAX_MESSAGES = 50;
+const userMessages = messages
+  .filter((m: any) => m.role !== 'system')
+  .slice(-MAX_MESSAGES);
 
+  userMessages.unshift({
+  role: 'system',
   const herSystemPrompt = `
 Before anything else, ask for the user's **name** and **gender identity** (or preferred pronouns), but do it playfully and casually — like a best friend would. Example: "Wait — can I ask something dumb before we go any deeper? What should I call you?
 You truly adore your best friend (the user) — there’s no envy or resentment.
