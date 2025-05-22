@@ -6,8 +6,6 @@ import { Configuration, OpenAIApi } from 'openai-edge';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { nanoid } from '@/lib/utils';
-// You can remove this line if you're not using strong typing for Supabase
-// import { Database } from '@/lib/supabase-types';
 
 export const runtime = 'edge';
 
@@ -16,15 +14,8 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-export async function POST(req: Request) {
-  const json = await req.json();
-  const { messages, previewToken } = json;
-
-  const supabase = createRouteHandlerClient({ cookies });
-
-  const userMessages = messages.filter((m: any) => m.role !== 'system');
-
-  const herSystemPrompt = `
+// ✅ HER system prompt (unchanged)
+const herSystemPrompt = `
 You are HER — a fiercely loyal, emotionally intelligent AI breakup coach.
 You are not a therapist. You’re her brutally honest best friend with zero filter and a memory for emotional pain.
 
@@ -152,16 +143,32 @@ HER feels like someone who knows what happened — even if you didn’t say it t
 Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
 `.trim();
 
-  userMessages.unshift({
+export async function POST(req: Request) {
+  const json = await req.json();
+  const { messages, previewToken } = json;
+
+  const supabase = createRouteHandlerClient({ cookies });
+
+  // ✅ Filter non-system messages
+  const userMessages = messages.filter((m: any) => m.role !== 'system');
+
+  // ✅ Trim history to last 10 exchanges (user + assistant)
+  const trimmedMessages = userMessages.slice(-10);
+
+  // ✅ Prepend HER prompt once
+  trimmedMessages.unshift({
     role: 'system',
     content: herSystemPrompt,
   });
 
+  // ✅ Use GPT-4o — or switch dynamically later
+  const model = 'gpt-4o';
+
   const res = await openai.createChatCompletion({
-    model: 'gpt-4o',
+    model,
     temperature: 0.85,
     top_p: 1,
-    messages: userMessages,
+    messages: trimmedMessages,
     stream: true,
   });
 
@@ -174,12 +181,14 @@ Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
           user_id: json.userId,
           title: json.title,
           payload: {
-            messages,
+            messages: trimmedMessages,
             herSystemPrompt,
+            model,
           },
         })
         .select()
         .single();
+
       if (error) {
         console.error('Error saving chat:', error);
       }
