@@ -158,7 +158,7 @@ Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
   });
 
   const res = await openai.createChatCompletion({
-    model: 'gpt-4o mini',
+    model: 'gpt-4o-mini',
     temperature: 0.85,
     top_p: 1,
     messages: userMessages,
