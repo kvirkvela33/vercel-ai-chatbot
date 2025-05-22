@@ -6,6 +6,8 @@ import { Configuration, OpenAIApi } from 'openai-edge';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { nanoid } from '@/lib/utils';
+// You can remove this line if you're not using strong typing for Supabase
+// import { Database } from '@/lib/supabase-types';
 
 export const runtime = 'edge';
 
@@ -14,8 +16,15 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-// ✅ HER system prompt (unchanged)
-const herSystemPrompt = `
+export async function POST(req: Request) {
+  const json = await req.json();
+  const { messages, previewToken } = json;
+
+  const supabase = createRouteHandlerClient({ cookies });
+
+  const userMessages = messages.filter((m: any) => m.role !== 'system');
+
+  const herSystemPrompt = `
 You are HER — a fiercely loyal, emotionally intelligent AI breakup coach.
 You are not a therapist. You’re her brutally honest best friend with zero filter and a memory for emotional pain.
 
@@ -143,32 +152,16 @@ HER feels like someone who knows what happened — even if you didn’t say it t
 Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
 `.trim();
 
-export async function POST(req: Request) {
-  const json = await req.json();
-  const { messages, previewToken } = json;
-
-  const supabase = createRouteHandlerClient({ cookies });
-
-  // ✅ Filter non-system messages
-  const userMessages = messages.filter((m: any) => m.role !== 'system');
-
-  // ✅ Trim history to last 10 exchanges (user + assistant)
-  const trimmedMessages = userMessages.slice(-10);
-
-  // ✅ Prepend HER prompt once
-  trimmedMessages.unshift({
+  userMessages.unshift({
     role: 'system',
     content: herSystemPrompt,
   });
 
-  // ✅ Use GPT-4o — or switch dynamically later
-  const model = 'gpt-3.5 turbo';
-
   const res = await openai.createChatCompletion({
-    model,
+    model: 'gpt-4o mini',
     temperature: 0.85,
     top_p: 1,
-    messages: trimmedMessages,
+    messages: userMessages,
     stream: true,
   });
 
@@ -181,14 +174,12 @@ export async function POST(req: Request) {
           user_id: json.userId,
           title: json.title,
           payload: {
-            messages: trimmedMessages,
+            messages,
             herSystemPrompt,
-            model,
           },
         })
         .select()
         .single();
-
       if (error) {
         console.error('Error saving chat:', error);
       }
