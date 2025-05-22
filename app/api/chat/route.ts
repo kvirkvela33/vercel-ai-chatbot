@@ -162,7 +162,7 @@ export async function POST(req: Request) {
   });
 
   // ✅ Use GPT-4o — or switch dynamically later
-  const model = 'gpt-4o';
+  const model = 'gpt-3.5 turbo';
 
   const res = await openai.createChatCompletion({
     model,
