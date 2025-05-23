@@ -5,15 +5,17 @@ import { useState, useEffect } from 'react';
 
 interface ChatProps {
   id: string;
+  initialMessages: Message[]; // ✅ ADD THIS LINE
 }
 
-export function Chat({ id }: ChatProps) {
+export function Chat({ id, initialMessages }: ChatProps) {
   const [needsRecalibration, setNeedsRecalibration] = useState(false);
   const [currentChatId, setCurrentChatId] = useState(id);
   const [currentChatTitle, setCurrentChatTitle] = useState('Untitled Chat');
 
   const { messages, input, handleInputChange, append, isLoading, error } = useChat({
     api: '/api/chat',
+    initialMessages, // ✅ USE IT HERE TOO
   });
 
   function detectAiPersonaDrift(aiResponse: string): boolean {
