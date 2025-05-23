@@ -1,0 +1,5 @@
+// types/openai-edge.d.ts
+declare module 'openai-edge' {
+  import { Configuration, OpenAIApi } from 'openai-edge';
+  export { Configuration, OpenAIApi };
+}
