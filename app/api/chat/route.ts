@@ -41,10 +41,10 @@ function detectMode(message: string): 'standard' | 'roasting' | 'friendly' {
 
 const detectedMode = detectMode(lastUserMessage);
 
-const modeHeader = {
-  standard: "🧠 [Standard Mode]: Calm, sharp, emotionally grounded.",
-  roasting: "🔥 [Roasting Mode]: Savage, loyal, no filters.",
-  friendly: "💗 [Friendly Mode]: Warm, soft sass, healing vibes.",
+const systemModeLine = {
+  standard: "**Mode Activated:** Standard Mode — raw, calm, emotionally sharp.\n*Alright… let’s keep it grounded and real.*",
+  roasting: "**Mode Activated:** Roasting Mode — sarcastic, dark, cathartic, savage truth.\n*Oh, we’re spiraling? Buckle up.*",
+  friendly: "**Mode Activated:** Friendly Mode — warm, supportive, emotionally softer.\n*Okay babe, let’s be soft for a sec.*",
 }[detectedMode];
 
 const herSystemPrompt = `
