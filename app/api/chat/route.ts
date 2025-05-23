@@ -50,11 +50,7 @@ export async function POST(req: Request) {
     const json = await req.json();
     const { messages, previewToken, needsRecalibration: clientNeedsRecalibration = false } = json;
 
-    const supabase = createRouteHandlerClient({
-      cookies,
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-    });
+    const supabase = createRouteHandlerClient({ cookies });
 
     const MAX_MESSAGES = 50;
     const userMessages = messages.filter((m: any) => m.role !== 'system').slice(-MAX_MESSAGES);
