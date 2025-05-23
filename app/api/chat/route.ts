@@ -229,6 +229,9 @@ HER feels like someone who knows what happened — even if you didn’t say it t
 Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
 `.trim();
 
+// ✅ Inject only if it's the first message in the session
+  const isFirstMessage = messages.length <= 1;
+  if (isFirstMessage) {
 userMessages.unshift({
   role: 'system',
   // CORRECTED: Changed finalSystemPrompt to herSystemPrompt
