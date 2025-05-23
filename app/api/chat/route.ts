@@ -16,8 +16,19 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
+// Moved detectMode function outside the POST handler
+function detectMode(message: string): 'standard' | 'roasting' | 'friendly' {
+  const roastTriggers = ['roast', 'vent', 'savage', 'f***', 'i hate', 'angry', 'pissed'];
+  const friendlyTriggers = ['i feel better', 'thank you', 'i’m healing', 'happy', 'relieved'];
+
+  if (roastTriggers.some(trigger => message.includes(trigger))) return 'roasting';
+  if (friendlyTriggers.some(trigger => message.includes(trigger))) return 'friendly';
+  return 'standard';
+}
+
+
 export async function POST(req: Request) {
-  try { // Added try-catch for robust error handling
+  try {
     const json = await req.json();
     const { messages, previewToken } = json;
 
@@ -30,15 +41,6 @@ export async function POST(req: Request) {
       .slice(-MAX_MESSAGES);
 
     const lastUserMessage = userMessages[userMessages.length - 1]?.content.toLowerCase() || "";
-
-    function detectMode(message: string): 'standard' | 'roasting' | 'friendly' {
-      const roastTriggers = ['roast', 'vent', 'savage', 'f***', 'i hate', 'angry', 'pissed'];
-      const friendlyTriggers = ['i feel better', 'thank you', 'i’m healing', 'happy', 'relieved'];
-
-      if (roastTriggers.some(trigger => message.includes(trigger))) return 'roasting';
-      if (friendlyTriggers.some(trigger => message.includes(trigger))) return 'friendly';
-      return 'standard';
-    }
 
     const detectedMode = detectMode(lastUserMessage);
 
