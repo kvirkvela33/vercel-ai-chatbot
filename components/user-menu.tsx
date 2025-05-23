@@ -27,12 +27,8 @@ function getUserInitials(name: string) {
 export function UserMenu({ user }: UserMenuProps) {
   const router = useRouter()
 
-  // ✅ Hardcoded credentials for local dev
-  const supabase = createClientComponentClient({
-    supabaseUrl: 'https://qjflshabwwxphbicouoz.supabase.co',
-    supabaseKey:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqZmxzaGFid3d4cGhiaWNvdW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3NTg5MzYsImV4cCI6MjA2MzMzNDkzNn0.Vq8M3wt47btE0vaUCkSinOmBaUeFtinpSbvBHHKStNw'
-  })
+  // ✅ Use Supabase client from environment vars (no hardcoding)
+  const supabase = createClientComponentClient()
 
   const signOut = async () => {
     await supabase.auth.signOut()

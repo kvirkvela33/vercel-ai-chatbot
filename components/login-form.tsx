@@ -23,11 +23,8 @@ export function LoginForm({
   const [isLoading, setIsLoading] = React.useState(false)
   const router = useRouter()
 
-  // ✅ Create Supabase client with URL + Key (for local dev only)
-  const supabase = createClientComponentClient({
-    supabaseUrl: 'https://qjflshabwwxphbicouoz.supabase.co',
-    supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqZmxzaGFid3d4cGhiaWNvdW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3NTg5MzYsImV4cCI6MjA2MzMzNDkzNn0.Vq8M3wt47btE0vaUCkSinOmBaUeFtinpSbvBHHKStNw'
-  })
+  // ✅ Use env-injected Supabase client (no hardcoded keys)
+  const supabase = createClientComponentClient()
 
   const [formState, setFormState] = React.useState<{
     email: string
