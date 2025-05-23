@@ -1,3 +1,5 @@
+'use client'
+
 import { type UseChatHelpers } from 'ai/react'
 
 import { Button } from '@/components/ui/button'
@@ -9,13 +11,7 @@ import { FooterText } from '@/components/footer'
 export interface ChatPanelProps
   extends Pick<
     UseChatHelpers,
-    | 'append'
-    | 'isLoading'
-    | 'reload'
-    | 'messages'
-    | 'stop'
-    | 'input'
-    | 'setInput'
+    'append' | 'isLoading' | 'reload' | 'messages' | 'stop' | 'input' | 'setInput'
   > {
   id?: string
 }
@@ -38,7 +34,7 @@ export function ChatPanel({
           {isLoading ? (
             <Button
               variant="outline"
-              onClick={() => stop()}
+              onClick={stop}
               className="bg-background"
             >
               <IconStop className="mr-2" />
@@ -48,7 +44,7 @@ export function ChatPanel({
             messages?.length > 0 && (
               <Button
                 variant="outline"
-                onClick={() => reload()}
+                onClick={reload}
                 className="bg-background"
               >
                 <IconRefresh className="mr-2" />
