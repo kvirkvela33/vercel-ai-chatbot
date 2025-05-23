@@ -9,7 +9,7 @@
     "incremental": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler", // ✅ required for ai/react and openai-edge
+    "moduleResolution": "bundler", // ✅ REQUIRED for `ai/react` and modern ESM packages
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -29,7 +29,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "types" // ✅ include custom type declarations
+    "types" // ✅ include your custom type declarations like openai-edge.d.ts
   ],
   "exclude": ["node_modules"]
 }
