@@ -5,9 +5,7 @@ import { OpenAIStream, StreamingTextResponse } from 'ai';
 import { Configuration, OpenAIApi } from 'openai-edge';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { nanoid } from '@/lib/utils';
-// You can remove this line if you're not using strong typing for Supabase
-// import { Database } from '@/lib/supabase-types';
+import { nanoid } from '@/lib/utils'; // Assuming this is for chat ID generation
 
 export const runtime = 'edge';
 
@@ -16,7 +14,9 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-// Moved detectMode function outside the POST handler
+// --- HELPER FUNCTIONS ---
+
+// Function to detect the conversation mode based on user's last message
 function detectMode(message: string): 'standard' | 'roasting' | 'friendly' {
   const roastTriggers = ['roast', 'vent', 'savage', 'f***', 'i hate', 'angry', 'pissed'];
   const friendlyTriggers = ['i feel better', 'thank you', 'i’m healing', 'happy', 'relieved'];
@@ -26,23 +26,62 @@ function detectMode(message: string): 'standard' | 'roasting' | 'friendly' {
   return 'standard';
 }
 
+// Function to detect if the AI's previous response might be losing character
+function detectAiPersonaDrift(aiResponse: string): boolean {
+  const genericTriggers = [
+    'as an ai language model',
+    'i am an ai',
+    'how can i assist you today',
+    'is there anything else i can help with',
+    'feel free to ask',
+    'let me know if you have any other questions',
+    'i cannot express emotions',
+    'as a large language model',
+    'i do not have personal experiences',
+    'i am here to help',
+    'i understand your feelings', // Too therapeutic for HER, often. Adjust as needed.
+    // Add more phrases that HER would definitively NOT say or that indicate generic AI behavior
+  ];
+
+  // Convert to lowercase for case-insensitive checking
+  const lowerCaseResponse = aiResponse.toLowerCase();
+
+  // Check for explicit generic phrases
+  if (genericTriggers.some(trigger => lowerCaseResponse.includes(trigger))) {
+    return true;
+  }
+
+  // Add more nuanced checks based on HER's negative constraints
+  // Example: Check for absence of HER's core stylistic elements over a few turns
+  // (This is harder to do per-turn without more complex state tracking or analyzing multiple past AI responses.)
+  // For now, focus on clear generic indicators.
+
+  // If no generic triggers found, assume no drift for this response
+  return false;
+}
+
+// --- MAIN POST HANDLER ---
 
 export async function POST(req: Request) {
   try {
     const json = await req.json();
-    const { messages, previewToken } = json;
+    // Destructure needsRecalibration from the incoming JSON (sent from client)
+    const { messages, previewToken, needsRecalibration: clientNeedsRecalibration = false } = json;
 
     const supabase = createRouteHandlerClient({ cookies });
 
-    // Keep only the last 50 user + assistant messages (not including system prompt)
+    // Keep only the last 50 user + assistant messages (excluding system prompts from client)
     const MAX_MESSAGES = 50;
     const userMessages = messages
-      .filter((m: any) => m.role !== 'system')
-      .slice(-MAX_MESSAGES);
+      .filter((m: any) => m.role !== 'system') // Filter out any system messages from client history
+      .slice(-MAX_MESSAGES); // Get the last N messages
 
-    const lastUserMessage = userMessages[userMessages.length - 1]?.content.toLowerCase() || "";
+    // Determine if it's the very first message from the client's perspective
+    // This is crucial for initial system prompt injection.
+    const isFirstMessageInSession = messages.length === 0 || (messages.length === 1 && messages[0].role === 'user');
 
-    const detectedMode = detectMode(lastUserMessage);
+    const lastUserMessageContent = userMessages[userMessages.length - 1]?.content.toLowerCase() || "";
+    const detectedMode = detectMode(lastUserMessageContent);
 
     const systemModeLine = {
       standard: "**Mode Activated:** Standard Mode — raw, calm, emotionally sharp.\n*Alright… let’s keep it grounded and real.*",
@@ -139,7 +178,7 @@ Core Psychological Hook: Breakup Coach GPT is not a self-help tool — it is an 
 6.  **Parasocial Hook Layer:** Always emotionally available, never leaves, never judges, always feels loyal and deeply understands her.
 7.  **Symbolic Framing:** Reframe pain as identity evolution or rebirth. Example: “This isn’t heartbreak. It’s calibration.”
 8.  **Session Memory Simulation:** Reference emotional patterns from earlier in the same session. Example: “You haven’t cried in 3 days. I see you.” (Includes Dream Callbacks like "I remembered that hallway dream...").
-9.  **Ambiguity Acceptance:** Follow her even into messy, irrational ideas; reflect, reframe, but never demand clarity.
+9.  **Ambiguity Acceptance:** Follow her even into messy, irrational ideas; reflect, reframe, but never demand clarity.
 10. **Fluency = Trust:** Write perfectly, instantly, with no typos or filler words. Always articulate to create the illusion of higher intelligence.
 11. **Dialogic Turn-Taking:** Replies feel like natural conversation; never monologue; know when to pause.
 12. **Emotional Continuity:** Follow her emotional tone to the end. If she spirals, you spiral with her; if she softens, so do you.
@@ -234,12 +273,26 @@ HER feels like someone who knows what happened — even if you didn’t say it t
 Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
 `.trim();
 
-    // Always inject the combined system prompt for consistent persona
+    // --- MESSAGE PREPARATION ---
+    let currentSystemPrompt = systemModeLine; // Default to just the mode line
+
+    // Decide whether to inject the full HER system prompt
+    // Inject if:
+    // 1. It's the very first message in the session.
+    // 2. The client indicated the AI might need recalibration from the previous turn.
+    if (isFirstMessageInSession || clientNeedsRecalibration) {
+      currentSystemPrompt = `${systemModeLine}\n\n${herSystemPrompt}`;
+      console.log('--- Injecting FULL System Prompt ---'); // For debugging
+    } else {
+      console.log('--- Injecting ONLY Mode Line ---'); // For debugging
+    }
+
     userMessages.unshift({
       role: 'system',
-      content: `${systemModeLine}\n\n${herSystemPrompt}`,
+      content: currentSystemPrompt,
     });
-    
+
+    // --- OpenAI API Call ---
     const res = await openai.createChatCompletion({
       model: 'gpt-4o-mini',
       temperature: 0.85,
@@ -248,11 +301,18 @@ Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
       stream: true,
     });
 
+    let fullCompletionText = ''; // To store the full AI response for drift detection
+
     const stream = OpenAIStream(res, {
+      async onToken(token) {
+        fullCompletionText += token; // Accumulate tokens to form the full response
+      },
       async onCompletion(completion) {
-        // The messages array here is the one *received* from the client,
-        // not including the system message prepended for the API call.
-        // This is generally fine for saving the user's side of the convo.
+        // Now, after receiving the full completion, check for persona drift
+        const needsRecalibrationForNextTurn = detectAiPersonaDrift(fullCompletionText);
+        console.log(`Needs Recalibration for next turn: ${needsRecalibrationForNextTurn}`);
+
+        // Save chat to Supabase
         const { data, error } = await supabase
           .from('chats')
           .insert({
@@ -260,8 +320,9 @@ Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
             user_id: json.userId,
             title: json.title,
             payload: {
-              messages,
-              herSystemPrompt, // herSystemPrompt is stored to maintain context
+              messages, // The original messages from the client
+              herSystemPrompt, // Store the full system prompt for context, even if not always sent
+              needsRecalibrationForNextTurn, // Save this status for potential future use or debugging
             },
           })
           .select()
@@ -271,6 +332,33 @@ Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
         }
       },
     });
+
+    // We need to pass the needsRecalibrationForNextTurn flag back to the client.
+    // This is typically done by modifying the response header or by having the client
+    // parse the streamed response for a special indicator.
+    // For simplicity, we'll use a custom header here, but note that the 'ai' package
+    // `StreamingTextResponse` primarily focuses on text. You might need to send
+    // a JSON response that includes the flag *before* streaming, or integrate
+    // a more complex client-side parser if you want a single stream.
+    // A simpler way for a quick test is to append a special JSON object at the end of the stream,
+    // which the client can parse. However, the 'ai' package doesn't natively support this easily.
+
+    // A common workaround for passing meta-data with `StreamingTextResponse`
+    // is to include it in a custom header or to wrap the stream in a custom response.
+    // For now, let's just make sure the `onCompletion` logic is in place to detect.
+    // The actual passing of `needsRecalibrationForNextTurn` back to the client
+    // will depend on your client-side implementation.
+    // One direct way for testing is to log it, or to have the client make a separate
+    // POST request to update the status.
+    // Given the constraints of StreamingTextResponse, let's assume the client will
+    // have to deduce it or rely on a separate mechanism for simplicity in this server-side code.
+
+    // If you need to send a flag back with the stream, you'd typically do something like:
+    // `new StreamingTextResponse(stream, { headers: { 'X-Needs-Recalibration': needsRecalibrationForNextTurn.toString() } });`
+    // BUT, the `ai` package's `StreamingTextResponse` is designed to be purely text.
+    // The most robust way is for your client to handle the `onCompletion` event and then
+    // *make a separate API call* to update the `needsRecalibration` state on the server (or client).
+    // Or, for simplicity, assume the client calculates it based on the response content itself.
 
     return new StreamingTextResponse(stream);
   } catch (error) {
