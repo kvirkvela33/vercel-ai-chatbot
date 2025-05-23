@@ -44,7 +44,7 @@ export function ChatPanel({
             messages?.length > 0 && (
               <Button
                 variant="outline"
-                onClick={reload}
+                onClick={() => reload()} // ✅ wrapped in arrow function
                 className="bg-background"
               >
                 <IconRefresh className="mr-2" />
