@@ -236,8 +236,8 @@ userMessages.unshift({
   role: 'system',
   // CORRECTED: Changed finalSystemPrompt to herSystemPrompt
   content: herSystemPrompt, 
-});
-
+  });
+}
   const res = await openai.createChatCompletion({
     model: 'gpt-4o-mini',
     temperature: 0.85,
