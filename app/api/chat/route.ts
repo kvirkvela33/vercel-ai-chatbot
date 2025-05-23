@@ -1,17 +1,15 @@
 // app/api/chat/route.ts
 import 'server-only';
 
-
-
 import { OpenAIStream, StreamingTextResponse } from 'ai';
 import { Configuration, OpenAIApi } from 'openai-edge';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { nanoid } from '@/lib/utils'; // Make sure this path is correct and nanoid is exported
+import { nanoid } from '@/lib/utils';
 
 export const runtime = 'edge';
 
-// These console.logs will now definitively show true/values if the hardcoding works
+// ✅ SAFE DEBUG LOGS ONLY — these do NOT assign anything
 console.log("✅ DEBUG - OPENAI_API_KEY loaded:", !!process.env.OPENAI_API_KEY);
 console.log("✅ DEBUG - SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 console.log("✅ DEBUG - SUPABASE_ANON_KEY (start):", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 10) + "...");
