@@ -1,11 +1,12 @@
 'use client';
 
 import { useChat, Message } from 'ai/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { nanoid } from 'nanoid';
 
 interface ChatProps {
   id: string;
-  initialMessages: Message[]; // ✅ ADD THIS LINE
+  initialMessages: Message[];
 }
 
 export function Chat({ id, initialMessages }: ChatProps) {
@@ -13,9 +14,16 @@ export function Chat({ id, initialMessages }: ChatProps) {
   const [currentChatId, setCurrentChatId] = useState(id);
   const [currentChatTitle, setCurrentChatTitle] = useState('Untitled Chat');
 
-  const { messages, input, handleInputChange, append, isLoading, error } = useChat({
+  const {
+    messages,
+    input,
+    handleInputChange,
+    append,
+    isLoading,
+    error
+  } = useChat({
     api: '/api/chat',
-    initialMessages, // ✅ USE IT HERE TOO
+    initialMessages,
   });
 
   function detectAiPersonaDrift(aiResponse: string): boolean {
@@ -40,11 +48,22 @@ export function Chat({ id, initialMessages }: ChatProps) {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const newUserMessage: Message = { role: 'user', content: input };
+    const newUserMessage: Message = {
+      id: nanoid(),
+      role: 'user',
+      content: input
+    };
+
     append(newUserMessage);
 
-    const messagesForApi = [...messages.map(m => ({ role: m.role, content: m.content })), newUserMessage];
-    handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+    const messagesForApi = [
+      ...messages.map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: input }
+    ];
+
+    handleInputChange({
+      target: { value: '' }
+    } as React.ChangeEvent<HTMLInputElement>);
 
     try {
       const res = await fetch('/api/chat', {
@@ -75,12 +94,21 @@ export function Chat({ id, initialMessages }: ChatProps) {
         assistantResponse += decoder.decode(value);
       }
 
-      append({ role: 'assistant', content: assistantResponse });
+      append({
+        id: nanoid(),
+        role: 'assistant',
+        content: assistantResponse
+      });
+
       const recalibrationNeeded = detectAiPersonaDrift(assistantResponse);
       setNeedsRecalibration(recalibrationNeeded);
     } catch (e: any) {
       console.error(e);
-      append({ role: 'assistant', content: `Error: ${e.message}` });
+      append({
+        id: nanoid(),
+        role: 'assistant',
+        content: `Error: ${e.message}`
+      });
     }
   };
 
@@ -92,8 +120,8 @@ export function Chat({ id, initialMessages }: ChatProps) {
         </div>
       )}
       {messages.length > 0 ? (
-        messages.map((m, i) => (
-          <div key={i} className="whitespace-pre-wrap mb-2">
+        messages.map((m) => (
+          <div key={m.id} className="whitespace-pre-wrap mb-2">
             <strong>{m.role === 'user' ? 'You: ' : 'HER: '}</strong>
             {m.content}
           </div>
