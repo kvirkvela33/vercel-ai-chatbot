@@ -12,18 +12,11 @@ const SheetTrigger = SheetPrimitive.Trigger
 
 const SheetClose = SheetPrimitive.Close
 
-const SheetPortal = ({
-  className,
-  children,
-  ...props
-}: SheetPrimitive.DialogPortalProps) => (
-  <SheetPrimitive.Portal
-    className={cn('fixed inset-0 z-50 flex', className)}
-    {...props}
-  >
-    {children}
-  </SheetPrimitive.Portal>
-)
+// Fix: SheetPortal no longer accepts className directly.
+// The className for the portal itself should be applied to an outer div
+// if you need to style the portal's container.
+// However, typically, you don't style the Portal directly but its content.
+const SheetPortal = SheetPrimitive.Portal
 SheetPortal.displayName = SheetPrimitive.Portal.displayName
 
 const SheetOverlay = React.forwardRef<
@@ -46,6 +39,8 @@ const SheetContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <SheetPortal>
+    {/* The className is applied to the SheetPrimitive.Content instead */}
+    <SheetOverlay /> {/* Add the overlay inside the portal as well */}
     <SheetPrimitive.Content
       ref={ref}
       className={cn(
