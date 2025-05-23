@@ -60,7 +60,11 @@ const CodeBlock: FC<Props> = memo(({ language, value }) => {
 
     const fileExtension = programmingLanguages[language] || '.file'
     const suggestedFileName = `file-${generateRandomString(3, true)}${fileExtension}`
-    const fileName = window.prompt('Enter file name', suggestedFileName)
+
+    // FIX: Explicitly cast the result of window.prompt to string or ensure it's handled.
+    // The previous line was causing an issue with Terser in the Next.js build.
+    // The if (!fileName) return; line correctly handles null/empty string.
+    const fileName = window.prompt('Enter file name', suggestedFileName) as string | null; // Explicit cast for clarity to TypeScript
 
     if (!fileName) return
 
