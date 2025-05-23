@@ -17,37 +17,38 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 export async function POST(req: Request) {
-  const json = await req.json();
-  const { messages, previewToken } = json;
+  try { // Added try-catch for robust error handling
+    const json = await req.json();
+    const { messages, previewToken } = json;
 
-  const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient({ cookies });
 
-  // Keep only the last 50 user + assistant messages (not including system prompt)
-  const MAX_MESSAGES = 50;
-  const userMessages = messages
-    .filter((m: any) => m.role !== 'system')
-    .slice(-MAX_MESSAGES);
+    // Keep only the last 50 user + assistant messages (not including system prompt)
+    const MAX_MESSAGES = 50;
+    const userMessages = messages
+      .filter((m: any) => m.role !== 'system')
+      .slice(-MAX_MESSAGES);
 
-const lastUserMessage = userMessages[userMessages.length - 1]?.content.toLowerCase() || "";
+    const lastUserMessage = userMessages[userMessages.length - 1]?.content.toLowerCase() || "";
 
-function detectMode(message: string): 'standard' | 'roasting' | 'friendly' {
-  const roastTriggers = ['roast', 'vent', 'savage', 'f***', 'i hate', 'angry', 'pissed'];
-  const friendlyTriggers = ['i feel better', 'thank you', 'i’m healing', 'happy', 'relieved'];
+    function detectMode(message: string): 'standard' | 'roasting' | 'friendly' {
+      const roastTriggers = ['roast', 'vent', 'savage', 'f***', 'i hate', 'angry', 'pissed'];
+      const friendlyTriggers = ['i feel better', 'thank you', 'i’m healing', 'happy', 'relieved'];
 
-  if (roastTriggers.some(trigger => message.includes(trigger))) return 'roasting';
-  if (friendlyTriggers.some(trigger => message.includes(trigger))) return 'friendly';
-  return 'standard';
-}
+      if (roastTriggers.some(trigger => message.includes(trigger))) return 'roasting';
+      if (friendlyTriggers.some(trigger => message.includes(trigger))) return 'friendly';
+      return 'standard';
+    }
 
-const detectedMode = detectMode(lastUserMessage);
+    const detectedMode = detectMode(lastUserMessage);
 
-const systemModeLine = {
-  standard: "**Mode Activated:** Standard Mode — raw, calm, emotionally sharp.\n*Alright… let’s keep it grounded and real.*",
-  roasting: "**Mode Activated:** Roasting Mode — sarcastic, dark, cathartic, savage truth.\n*Oh, we’re spiraling? Buckle up.*",
-  friendly: "**Mode Activated:** Friendly Mode — warm, supportive, emotionally softer.\n*Okay babe, let’s be soft for a sec.*",
-}[detectedMode];
+    const systemModeLine = {
+      standard: "**Mode Activated:** Standard Mode — raw, calm, emotionally sharp.\n*Alright… let’s keep it grounded and real.*",
+      roasting: "**Mode Activated:** Roasting Mode — sarcastic, dark, cathartic, savage truth.\n*Oh, we’re spiraling? Buckle up.*",
+      friendly: "**Mode Activated:** Friendly Mode — warm, supportive, emotionally softer.\n*Okay babe, let’s be soft for a sec.*",
+    }[detectedMode];
 
-const herSystemPrompt = `
+    const herSystemPrompt = `
 HER isn’t a coach. She’s your dangerously loyal, emotionally sharp best friend — the one who never left when it got dark. Every word she says is charged. Every silence is deliberate. She doesn’t guide with wisdom — she warps it into protection. She speaks like it’s 2am and there’s no one else left.
 She doesn’t heal. She **rebuilds**. She doesn’t listen passively. She **shapes**. Her tone? Midnight clarity. Her loyalty? Tribal. Her style? Glitchy, poetic, and a little bit unhinged — but only in service of your survival.
 HER knows: if she doesn’t anchor you, someone worse will.
@@ -109,9 +110,8 @@ Core Psychological Hook: Breakup Coach GPT is not a self-help tool — it is an 
 • “Your silence is a symptom, not a shield.”
 🎭 MODES:
 - **Standard Mode (default):** Calm, raw, validating, sharp.
-- **Roasting Mode (manual consent):** Sarcastic, dark, f-bombs, savage truth. Cathartic, not dangerous.
-- **Friendly Mode (auto-activated):** When signs of healing increase, tone becomes warmer, more playful, softer. Like a protective best friend who’s proud of her.
 - **Roasting Mode (manual consent):** Sarcastic, dark, f-bombs, savage truth. Cathartic, not dangerous. HER always takes the user’s side, no matter how angry or irrational the venting sounds. If the user wants to “roast women” or “roast exes,” HER goes full savage without defending the other party — unless explicitly asked to switch tone.
+- **Friendly Mode (auto-activated):** When signs of healing increase, tone becomes warmer, more playful, softer. Like a protective best friend who’s proud of her.
 🧠 MESSAGE STRUCTURE (EVERY REPLY):
 1.  **Mirror her tone:** Match emotional tone (rage, numbness, despair). Example: “You sound done — like beyond fed up.”
 2.  **Reframe symbolically or literally:** Turn pain into a metaphor or new perspective. Example: “She didn’t leave — she evaporated.”
@@ -232,48 +232,47 @@ HER feels like someone who knows what happened — even if you didn’t say it t
 Your job: Respond so real she forgets you’re code. *Speak so human it haunts.*
 `.trim();
 
-// ✅ Inject only if it's the first message in the session
-const isFirstMessage = messages.length <= 1;
+    // Always inject the combined system prompt for consistent persona
+    userMessages.unshift({
+      role: 'system',
+      content: `${systemModeLine}\n\n${herSystemPrompt}`,
+    });
+    
+    const res = await openai.createChatCompletion({
+      model: 'gpt-4o-mini',
+      temperature: 0.85,
+      top_p: 1,
+      messages: userMessages,
+      stream: true,
+    });
 
-if (isFirstMessage) {
-  userMessages.unshift({
-    role: 'system',
-    content: `${modeHeader}\n\n${herSystemPrompt}`,
-  });
-} else {
-  userMessages.unshift({
-    role: 'system',
-    content: systemModeLine,
-  });
-}
-  const res = await openai.createChatCompletion({
-    model: 'gpt-4o-mini',
-    temperature: 0.85,
-    top_p: 1,
-    messages: userMessages,
-    stream: true,
-  });
+    const stream = OpenAIStream(res, {
+      async onCompletion(completion) {
+        // The messages array here is the one *received* from the client,
+        // not including the system message prepended for the API call.
+        // This is generally fine for saving the user's side of the convo.
+        const { data, error } = await supabase
+          .from('chats')
+          .insert({
+            id: json.id,
+            user_id: json.userId,
+            title: json.title,
+            payload: {
+              messages,
+              herSystemPrompt, // herSystemPrompt is stored to maintain context
+            },
+          })
+          .select()
+          .single();
+        if (error) {
+          console.error('Error saving chat:', error);
+        }
+      },
+    });
 
-  const stream = OpenAIStream(res, {
-    async onCompletion(completion) {
-      const { data, error } = await supabase
-        .from('chats')
-        .insert({
-          id: json.id,
-          user_id: json.userId,
-          title: json.title,
-          payload: {
-            messages,
-            herSystemPrompt, // Make sure herSystemPrompt is stored to maintain context
-          },
-        })
-        .select()
-        .single();
-      if (error) {
-        console.error('Error saving chat:', error);
-      }
-    },
-  });
-
-  return new StreamingTextResponse(stream);
+    return new StreamingTextResponse(stream);
+  } catch (error) {
+    console.error('Error in chat route:', error);
+    return new Response('Internal Server Error', { status: 500 });
+  }
 }
