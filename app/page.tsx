@@ -1,3 +1,5 @@
+'use client'; // This line is crucial for client-side rendering in Next.js App Router
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
