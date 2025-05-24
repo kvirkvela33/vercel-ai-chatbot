@@ -1,33 +1,33 @@
-import { Metadata } from 'next'
+import { Metadata } from 'next';
 
-import { Toaster } from 'react-hot-toast'
+import { Toaster } from 'react-hot-toast';
 
-import '@/app/globals.css'
-import { fontMono, fontSans } from '@/lib/fonts'
-import { cn } from '@/lib/utils'
-import { TailwindIndicator } from '@/components/tailwind-indicator'
-import { Providers } from '@/components/providers'
-import { Header } from '@/components/header'
+import '@/app/globals.css';
+import { fontMono, fontSans } from '@/lib/fonts';
+import { cn } from '@/lib/utils';
+import { TailwindIndicator } from '@/components/tailwind-indicator';
+import { Providers } from '@/components/providers';
+import { Header } from '@/components/header';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Next.js AI Chatbot',
-    template: `%s - Next.js AI Chatbot`
+    default: 'HER.ai — Breakup Companion',
+    template: `%s · HER.ai`
   },
-  description: 'An AI-powered chatbot template built with Next.js and Vercel.',
+  description: 'HER is your fiercely loyal, emotionally dangerous AI best friend after a breakup.',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' }
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0c0c0c' }
   ],
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon-16x16.png',
     apple: '/apple-touch-icon.png'
   }
-}
+};
 
 interface RootLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
@@ -52,5 +52,5 @@ export default function RootLayout({ children }: RootLayoutProps) {
         </Providers>
       </body>
     </html>
-  )
+  );
 }
