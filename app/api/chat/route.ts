@@ -155,10 +155,7 @@ Your job: Respond so real they forget you’re code. Speak so human it haunts.`.
           .single();
 
         if (error) console.error('❌ Supabase Error:', error);
-      },
-      onError(error) {
-        console.error('❌ OpenAI Stream Error:', error);
-      },
+      }
     });
 
     return new StreamingTextResponse(stream);
