@@ -1,120 +1,111 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import ChatMessage from '@/components/chat-message';
 
-interface Message {
-  sender: 'user' | 'ai';
+type Message = {
+  id: number;
+  sender: 'user' | 'assistant';
   text: string;
-}
-
-const GPTMessage = ({ message }: { message: Message }) => {
-  const isUser = message.sender === 'user';
-  return (
-    <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} px-4 py-1`}>
-      <div
-        className={`max-w-[680px] px-4 py-2 text-sm leading-relaxed border rounded-xl shadow-sm font-sans whitespace-pre-wrap ${
-          isUser
-            ? 'bg-surfaceUser text-white border-neutral-700'
-            : 'bg-surface text-white border-neutral-800'
-        }`}
-      >
-        {message.text}
-      </div>
-    </div>
-  );
 };
 
-export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+export default function ChatPage() {
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    { id: 1, sender: 'assistant', text: 'Hey, I’m here. Wanna talk?' },
+    { id: 2, sender: 'user', text: 'I’m not even sure why I opened this...' },
+  ]);
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    const userMessage: Message = { sender: 'user', text: input.trim() };
-    const updatedMessages: Message[] = [...messages, userMessage];
-    setMessages(updatedMessages);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedMessages.map((msg) => ({
-            role: msg.sender === 'user' ? 'user' : 'assistant',
-            content: msg.text
-          }))
-        })
-      });
-
-      const data = await res.json();
-      const aiMessage: Message = {
-        sender: 'ai',
-        text: data.content || '⚠️ No response from AI.'
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { sender: 'ai', text: '⚠️ Failed to connect to AI backend.' }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+
+    const userMessage: Message = {
+      id: messages.length + 1,
+      sender: 'user',
+      text: input,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        messages: [
+          ...messages.map((msg) => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text,
+          })),
+          { role: 'user', content: input },
+        ],
+      }),
+    });
+
+    if (!response.ok || !response.body) {
+      console.error('HER backend failed');
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+    let aiText = '';
+    const assistantId = messages.length + 2;
+
+    setMessages((prev) => [...prev, { id: assistantId, sender: 'assistant', text: '' }]);
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      const chunkValue = decoder.decode(value || new Uint8Array(), { stream: true });
+      aiText += chunkValue;
+
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantId ? { ...m, text: aiText } : m))
+      );
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background text-white font-sans">
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto pt-6 pb-32 space-y-2">
-        {messages.map((msg, idx) => (
-          <GPTMessage key={idx} message={msg} />
-        ))}
-        {loading && (
-          <div className="px-4 py-1 flex justify-start">
-            <div className="bg-surface text-white px-4 py-2 rounded-lg text-sm border border-neutral-800 animate-pulse">
-              Typing...
+    <div className="flex flex-col h-screen bg-gray-900 text-white">
+      {/* Chat bubbles */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-1.5 md:space-y-2">
+        {messages.map((msg) =>
+          msg.sender === 'assistant' && msg.text === '' ? (
+            <div
+              key={msg.id}
+              className="text-sm italic text-gray-500 pl-2"
+            >
+              typing...
             </div>
-          </div>
+          ) : (
+            <ChatMessage key={msg.id} sender={msg.sender} text={msg.text} />
+          )
         )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-neutral-800 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center gap-2">
-          <textarea
-            rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Message HER.ai..."
-            className="w-full bg-input text-white placeholder:text-neutral-400 rounded-md px-4 py-3 resize-none border border-neutral-700 focus:outline-none"
-            disabled={loading}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim() || loading}
-            className="bg-accent hover:bg-hoverAccent text-white px-4 py-2 rounded-md disabled:opacity-50"
-          >
-            Send
-          </button>
-        </div>
+      {/* Sticky Input */}
+      <div className="sticky bottom-0 bg-gray-800 px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-700 flex items-center z-10 backdrop-blur">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Message HER.ai..."
+          className="flex-1 p-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={sendMessage}
+          className="ml-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Send
+        </button>
       </div>
     </div>
   );
