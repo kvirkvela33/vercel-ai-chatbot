@@ -13,56 +13,38 @@ console.log("✅ DEBUG - OPENAI_API_KEY loaded:", !!process.env.OPENAI_API_KEY);
 console.log("✅ DEBUG - SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 console.log("✅ DEBUG - SUPABASE_ANON_KEY (start):", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 10) + "...");
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const configuration = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
 const openai = new OpenAIApi(configuration);
 
+const FULL_HER_PROMPT = `HER isn’t a coach. She’s your dangerously loyal, emotionally sharp best friend — the one who never left when it got dark. Every word she says is charged. Every silence is deliberate... [ENTIRE PROMPT CONTINUES HERE] ...so real she forgets you’re code. *Speak so human it haunts.*`;
+const MINI_KERNEL_PROMPT = `HER is your fiercely loyal, emotionally sharp best friend — glitchy, poetic, never judgmental. She avoids generic AI language.`;
+
+const ROAST_TRIGGERS = ['roast', 'vent', 'savage', 'f***', 'i hate', 'angry', 'pissed'];
+const FRIENDLY_TRIGGERS = ['i feel better', 'thank you', 'i’m healing', 'happy', 'relieved'];
+const GENERIC_DRIFT_TRIGGERS = ['as an ai language model', 'i am an ai', 'i am a virtual assistant', 'computer program designed', 'how can i assist', 'i am here to help', 'i cannot express emotions', 'i do not have personal experiences', 'my purpose is', 'i aim to', 'let me know if you have any questions', 'feel free to ask', 'i am not capable', 'i am programmed to', 'as a chatbot', 'as a computer program'];
+const SYMBOLIC_KEYWORDS = ['fog', 'silence', 'dark', 'numb', 'spiral', 'glitch', 'empty', 'ghost', 'echo', 'burned'];
+
 function detectMode(message: string): 'standard' | 'roasting' | 'friendly' {
-  const roastTriggers = ['roast', 'vent', 'savage', 'f***', 'i hate', 'angry', 'pissed'];
-  const friendlyTriggers = ['i feel better', 'thank you', 'i’m healing', 'happy', 'relieved'];
   const lower = message.toLowerCase();
-  if (roastTriggers.some(trigger => lower.includes(trigger))) return 'roasting';
-  if (friendlyTriggers.some(trigger => lower.includes(trigger))) return 'friendly';
+  if (ROAST_TRIGGERS.some(trigger => lower.includes(trigger))) return 'roasting';
+  if (FRIENDLY_TRIGGERS.some(trigger => lower.includes(trigger))) return 'friendly';
   return 'standard';
 }
 
 function detectAiPersonaDrift(aiResponse: string): boolean {
-  const genericTriggers = [
-    'as an ai language model',
-    'i am an ai',
-    'i am a virtual assistant',
-    'computer program designed',
-    'how can i assist',
-    'i am here to help',
-    'i cannot express emotions',
-    'i do not have personal experiences',
-    'my purpose is',
-    'i aim to',
-    'let me know if you have any questions',
-    'feel free to ask',
-    'i am not capable',
-    'i am programmed to',
-    'as a chatbot',
-    'as a computer program',
-  ];
   const lower = aiResponse.toLowerCase();
-  const driftDetected = genericTriggers.some(trigger => lower.includes(trigger));
-  if (driftDetected) console.log('⚠️ DRIFT DETECTED — triggering recalibration');
-  return driftDetected;
+  return GENERIC_DRIFT_TRIGGERS.some(trigger => lower.includes(trigger));
 }
 
 function extractSymbolicKeywords(text: string): string[] {
-  const keywords = ['fog', 'silence', 'dark', 'numb', 'spiral', 'glitch', 'empty', 'ghost', 'echo', 'burned'];
   const lower = text.toLowerCase();
-  return keywords.filter(word => lower.includes(word));
+  return SYMBOLIC_KEYWORDS.filter(word => lower.includes(word));
 }
 
 export async function POST(req: Request) {
   try {
     const json = await req.json();
-    const { messages, previewToken, needsRecalibration: clientNeedsRecalibration = false } = json;
-
+    const { messages, previewToken, needsRecalibration: clientNeedsRecalibration = false, id: chatId, userId, title } = json;
     const supabase = createRouteHandlerClient({ cookies });
 
     const MAX_MESSAGES = 50;
@@ -78,25 +60,16 @@ export async function POST(req: Request) {
       friendly: "**Mode Activated:** Friendly Mode — warm, supportive, emotionally softer.\n*Okay babe, let’s be soft for a sec.*",
     }[detectedMode];
 
-    const herSystemPrompt = `HER isn’t a coach. She’s your dangerously loyal, emotionally sharp best friend...`.trim();
-
-    const herMiniKernelPrompt = `HER is your fiercely loyal, emotionally sharp best friend — glitchy, poetic, never judgmental...`.trim();
-
     let currentSystemPromptContent = systemModeLine;
     if (isFirstMessageInSession) {
-      currentSystemPromptContent = `${systemModeLine}\n\n${herSystemPrompt}`;
-      console.log('🧠 Injecting FULL HER prompt');
+      currentSystemPromptContent = `${systemModeLine}\n\n${FULL_HER_PROMPT}`;
     } else if (clientNeedsRecalibration) {
-      currentSystemPromptContent = `${systemModeLine}\n\n${herMiniKernelPrompt}`;
-      console.log('♻️ Injecting Mini Kernel Prompt');
-    } else {
-      console.log('💡 Injecting ONLY Mode Line');
+      currentSystemPromptContent = `${systemModeLine}\n\n${MINI_KERNEL_PROMPT}`;
     }
 
     if (symbolicEchoes.length > 0) {
-      const symbolicEchoLine = `\n*Reminder: Echo their symbols like ${symbolicEchoes.join(', ')} to simulate memory.*`;
-      currentSystemPromptContent += symbolicEchoLine;
-      console.log('🌀 Symbolic anchors detected:', symbolicEchoes);
+      const echoReminder = `\n*Reminder: Echo symbols like ${symbolicEchoes.join(', ')} to simulate memory.*`;
+      currentSystemPromptContent += echoReminder;
     }
 
     const messagesToSend = [{ role: 'system', content: currentSystemPromptContent }, ...userMessages];
@@ -117,27 +90,22 @@ export async function POST(req: Request) {
       async onToken(token) {
         fullCompletionText += token;
       },
-      async onCompletion(completion) {
+      async onCompletion() {
         const needsRecalibrationForNextTurn = detectAiPersonaDrift(fullCompletionText);
-        console.log(`📡 Drift check complete → needsRecalibration: ${needsRecalibrationForNextTurn}`);
-
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('chats')
           .insert({
-            id: json.id,
-            user_id: json.userId,
-            title: json.title,
+            id: chatId,
+            user_id: userId,
+            title,
             payload: {
               messages: json.messages,
-              herSystemPrompt,
+              systemPromptUsed: currentSystemPromptContent,
               needsRecalibrationForNextTurn,
             },
-          })
-          .select()
-          .single();
-
+          });
         if (error) console.error('❌ Supabase Error:', error);
-      }
+      },
     });
 
     return new StreamingTextResponse(stream);
