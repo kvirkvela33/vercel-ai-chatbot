@@ -1,8 +1,8 @@
-const { fontFamily } = require('tailwindcss/defaultTheme')
+const { fontFamily } = require('tailwindcss/defaultTheme');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: ['class'],
+  darkMode: ['class'], // Required for class-based dark mode
   content: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
   theme: {
     container: {
@@ -17,44 +17,24 @@ module.exports = {
         sans: ['var(--font-sans)', ...fontFamily.sans]
       },
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))'
-        },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))'
-        },
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))'
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))'
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))'
-        },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))'
-        },
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))'
-        }
+        background: '#202123', // Background of the whole page
+        inputBg: '#40414f',    // Input box background
+        inputBorder: '#4b4b4e',
+        surface: '#444654',     // Assistant bubble background
+        surfaceUser: '#2f81f7', // User message bubble
+        accent: '#2f81f7',      // Buttons
+        hoverAccent: '#1a73e8', // Button hover
+        placeholder: '#a0a0a0', // Input placeholder text
+        border: '#3c3f4a',
+        ring: '#5b5f6b',
+        muted: '#777',
+        white: '#ffffff',
+        black: '#000000'
       },
       borderRadius: {
-        lg: `var(--radius)`,
-        md: `calc(var(--radius) - 2px)`,
-        sm: 'calc(var(--radius) - 4px)'
+        lg: '1rem',
+        md: '0.5rem',
+        sm: '0.25rem'
       },
       keyframes: {
         'accordion-down': {
@@ -92,5 +72,8 @@ module.exports = {
       }
     }
   },
-  plugins: [require('tailwindcss-animate'), require('@tailwindcss/typography')]
-}
+  plugins: [
+    require('tailwindcss-animate'),
+    require('@tailwindcss/typography')
+  ]
+};

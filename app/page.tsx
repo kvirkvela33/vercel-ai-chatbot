@@ -10,12 +10,10 @@ interface Message {
 const GPTMessage = ({ message }: { message: Message }) => {
   const isUser = message.sender === 'user';
   return (
-    <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} my-2 px-2`}>
+    <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} px-4 py-1`}>
       <div
-        className={`max-w-3xl px-4 py-3 rounded-lg shadow-sm text-sm whitespace-pre-wrap break-words ${
-          isUser
-            ? 'bg-[#2f81f7] text-white'
-            : 'bg-[#444654] text-white'
+        className={`max-w-[680px] px-4 py-3 text-sm leading-relaxed shadow-md rounded-lg whitespace-pre-wrap font-sans ${
+          isUser ? 'bg-surfaceUser text-white' : 'bg-surface text-white'
         }`}
       >
         {message.text}
@@ -31,11 +29,12 @@ export default function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const sendMessage = async () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
+    if (!input.trim()) return;
 
-    const userMsg: Message = { sender: 'user', text: trimmed };
-    setMessages((prev) => [...prev, userMsg]);
+    const userMessage = { sender: 'user', text: input.trim() };
+    const updatedMessages = [...messages, userMessage];
+
+    setMessages(updatedMessages);
     setInput('');
     setLoading(true);
 
@@ -43,18 +42,28 @@ export default function Chat() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, { role: 'user', content: trimmed }] }),
+        body: JSON.stringify({
+          messages: updatedMessages.map((msg) => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text,
+          })),
+        }),
       });
 
+      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+
       const data = await res.json();
-      const aiMsg: Message = {
+      const aiMessage = {
         sender: 'ai',
-        text: data.content || 'No response from AI.',
+        text: data.content || '⚠️ No response from AI.',
       };
-      setMessages((prev) => [...prev, aiMsg]);
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {
-      console.error('❌ Backend Error:', err);
-      setMessages((prev) => [...prev, { sender: 'ai', text: '⚠️ Failed to connect to AI backend.' }]);
+      console.error('Backend error:', err);
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: '⚠️ Failed to connect to AI backend.' },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -62,7 +71,7 @@ export default function Chat() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [messages]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -72,36 +81,38 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#343541] text-white font-sans">
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+    <div className="flex flex-col h-screen bg-background text-white font-sans">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto pt-6 pb-32">
         {messages.map((msg, idx) => (
           <GPTMessage key={idx} message={msg} />
         ))}
         {loading && (
-          <div className="w-full flex justify-start my-2 px-2">
-            <div className="bg-[#444654] px-4 py-3 rounded-lg text-sm animate-pulse">Typing...</div>
+          <div className="px-4 py-1 flex justify-start">
+            <div className="bg-surface text-white px-4 py-3 rounded-lg text-sm animate-pulse">
+              Typing...
+            </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div className="w-full bg-[#343541] px-4 py-4 border-t border-[#4b4b4e]">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-inputBorder px-4 py-4">
         <div className="max-w-3xl mx-auto flex items-center gap-2">
           <textarea
+            rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Send a message..."
-            rows={1}
-            className="w-full bg-[#40414f] text-white placeholder-gray-400 rounded-md px-4 py-3 resize-none focus:outline-none"
+            placeholder="Message HER.ai..."
+            className="w-full bg-inputBg text-white placeholder-placeholder rounded-md px-4 py-3 resize-none focus:outline-none"
             disabled={loading}
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
-            className="bg-[#2f81f7] hover:bg-[#1a73e8] text-white px-4 py-2 rounded-md disabled:opacity-50"
+            className="bg-accent hover:bg-hoverAccent text-white px-4 py-2 rounded-md disabled:opacity-50"
           >
             Send
           </button>
