@@ -1,27 +1,41 @@
-import { type Message } from 'ai'
+// components/chat-list.tsx
 
-import { Separator } from '@/components/ui/separator'
-import { ChatMessage } from '@/components/chat-message'
+import React from 'react';
+import { Separator } from '@/components/ui/separator';
+import ChatMessage from '@/components/chat-message'; // ✅ FIXED
 
-export interface ChatList {
-  messages: Message[]
+export interface Message {
+  id: number;
+  sender: 'user' | 'assistant';
+  text: string;
 }
 
-export function ChatList({ messages }: ChatList) {
-  if (!messages.length) {
-    return null
-  }
+export interface ChatListProps {
+  messages: Message[];
+}
+
+export const ChatList: React.FC<ChatListProps> = ({ messages }) => {
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
-    <div className="relative mx-auto max-w-2xl px-4">
-      {messages.map((message, index) => (
-        <div key={index}>
-          <ChatMessage message={message} />
-          {index < messages.length - 1 && (
-            <Separator className="my-4 md:my-8" />
-          )}
-        </div>
-      ))}
+    <div className="flex flex-col space-y-2 p-4">
+      {messages.length === 0 ? (
+        <div className="text-center text-gray-400">No messages yet</div>
+      ) : (
+        messages.map((msg) => (
+          <ChatMessage
+            key={msg.id}
+            sender={msg.sender}
+            text={msg.text}
+          />
+        ))
+      )}
+      <div ref={bottomRef} />
+      <Separator />
     </div>
-  )
-}
+  );
+};

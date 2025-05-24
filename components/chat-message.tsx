@@ -1,28 +1,30 @@
-'use client';
+// components/chat-message.tsx
 
 import React from 'react';
-import { cn } from '@/lib/utils';
 
 interface ChatMessageProps {
   sender: 'user' | 'assistant';
   text: string;
 }
 
-export default function ChatMessage({ sender, text }: ChatMessageProps) {
-  const isUser = sender === 'user';
-
+const ChatMessage: React.FC<ChatMessageProps> = ({ sender, text }) => {
   return (
-    <div className={cn('w-full flex', isUser ? 'justify-end' : 'justify-start')}>
+    <div
+      className={`my-2 flex ${
+        sender === 'user' ? 'justify-end' : 'justify-start'
+      }`}
+    >
       <div
-        className={cn(
-          'max-w-[80%] md:max-w-md rounded-2xl px-4 py-3 text-sm md:text-base whitespace-pre-wrap shadow-md',
-          isUser
-            ? 'bg-blue-600 text-white rounded-br-sm'
-            : 'bg-neutral-200 text-neutral-900 rounded-bl-sm dark:bg-neutral-800 dark:text-neutral-100'
-        )}
+        className={`max-w-xs rounded-lg px-4 py-2 shadow ${
+          sender === 'user'
+            ? 'bg-blue-500 text-white'
+            : 'bg-gray-300 text-black'
+        }`}
       >
         {text}
       </div>
     </div>
   );
-}
+};
+
+export default ChatMessage;
