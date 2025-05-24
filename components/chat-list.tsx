@@ -15,11 +15,11 @@ export interface ChatListProps {
 
 export function ChatList({ messages }: ChatListProps) {
   return (
-    <div className="flex flex-col gap-4 px-4">
-      {messages.map((message) => (
+    <div className="flex flex-col gap-1 px-2">
+      {messages.map((message, index) => (
         <div key={message.id}>
           <ChatMessage sender={message.sender} text={message.text} />
-          <Separator className="my-4" />
+          {index < messages.length - 1 && <div className="h-1" />}
         </div>
       ))}
     </div>

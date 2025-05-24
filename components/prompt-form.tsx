@@ -1,94 +1,48 @@
+'use client'
+
 import * as React from 'react'
-import Link from 'next/link'
-import Textarea from 'react-textarea-autosize'
-import { UseChatHelpers } from 'ai/react'
+import { Button } from '@/components/ui/button'
+import { IconArrowUp } from '@/components/ui/icons'
 
-import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
-import { cn } from '@/lib/utils'
-import { Button, buttonVariants } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
-} from '@/components/ui/tooltip'
-import { IconArrowElbow, IconPlus } from '@/components/ui/icons'
-
-export interface PromptProps
-  extends Pick<UseChatHelpers, 'input' | 'setInput'> {
-  onSubmit: (value: string) => Promise<void>
+interface PromptFormProps {
+  id?: string
+  input: string
   isLoading: boolean
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  stop: () => void
 }
 
 export function PromptForm({
-  onSubmit,
+  id,
   input,
-  setInput,
-  isLoading
-}: PromptProps) {
-  const { formRef, onKeyDown } = useEnterSubmit()
-  const inputRef = React.useRef<HTMLTextAreaElement>(null)
+  isLoading,
+  handleInputChange,
+  handleSubmit,
+}: PromptFormProps) {
+  const inputRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus()
-    }
+    inputRef.current?.focus()
   }, [])
 
   return (
     <form
-      onSubmit={async e => {
-        e.preventDefault()
-        if (!input?.trim()) {
-          return
-        }
-        setInput('')
-        await onSubmit(input)
-      }}
-      ref={formRef}
+      onSubmit={handleSubmit}
+      className="flex w-full items-center gap-2 border-t bg-background px-3 py-2 sm:px-4 sm:py-3"
     >
-      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Link
-              href="/"
-              className={cn(
-                buttonVariants({ size: 'sm', variant: 'outline' }),
-                'absolute left-0 top-4 h-8 w-8 rounded-full bg-background p-0 sm:left-4'
-              )}
-            >
-              <IconPlus />
-              <span className="sr-only">New Chat</span>
-            </Link>
-          </TooltipTrigger>
-          <TooltipContent>New Chat</TooltipContent>
-        </Tooltip>
-        <Textarea
-          ref={inputRef}
-          tabIndex={0}
-          onKeyDown={onKeyDown}
-          rows={1}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Send a message."
-          spellCheck={false}
-          className="min-h-[60px] w-full resize-none bg-transparent px-4 py-[1.3rem] focus-within:outline-none sm:text-sm"
-        />
-        <div className="absolute right-0 top-4 sm:right-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="submit"
-                size="icon"
-                disabled={isLoading || input === ''}
-              >
-                <IconArrowElbow />
-                <span className="sr-only">Send message</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Send message</TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
+      <input
+        ref={inputRef}
+        name="prompt"
+        placeholder="Type your message..."
+        value={input}
+        onChange={handleInputChange}
+        disabled={isLoading}
+        className="flex-1 rounded-md border px-3 py-1.5 text-sm focus:outline-none max-w-[100%] sm:max-w-[calc(100%-48px)]"
+      />
+      <Button type="submit" size="icon" disabled={isLoading}>
+        <IconArrowUp />
+      </Button>
     </form>
   )
 }
