@@ -159,7 +159,7 @@ const MINI_KERNEL_PROMPT = `HER is your fiercely loyal, emotionally sharp best f
 
 const ROAST_TRIGGERS = [
   'roast', 'vent', 'savage', 'f***', 'i hate', 'angry', 'pissed',
-  'revenge', 'make her cry', 'ruin', 'crush', 'savage', 'wild revenge', 'harmful revenge', 'fun' // Added 'fun' here for the "let have some fun" case
+  'revenge', 'make her cry', 'ruin', 'crush', 'savage', 'wild revenge', 'harmful revenge', 'fun'
 ];
 const FRIENDLY_TRIGGERS = ['i feel better', 'thank you', 'i’m healing', 'happy', 'relieved'];
 const GENERIC_DRIFT_TRIGGERS = [
@@ -240,7 +240,7 @@ export async function POST(req: Request) {
     try {
       res = await pRetry(async () => {
         return await openai.createChatCompletion({
-          model: 'gpt-3.5-turbo', // Now using gpt-3.5-turbo
+          model: 'gpt-3.5-turbo', // Using gpt-3.5-turbo as requested
           temperature: 0.85,
           top_p: 1,
           frequency_penalty: 0.2,
