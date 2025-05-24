@@ -1,20 +1,20 @@
-import { Metadata } from 'next';
-
+// app/layout.tsx
+import './globals.css';
+import { inter } from '@/lib/fonts';
 import { Toaster } from 'react-hot-toast';
-
-import '@/app/globals.css';
-import { fontMono, fontSans } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { TailwindIndicator } from '@/components/tailwind-indicator';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/header';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: {
     default: 'HER.ai — Breakup Companion',
     template: `%s · HER.ai`
   },
-  description: 'HER is your fiercely loyal, emotionally dangerous AI best friend after a breakup.',
+  description:
+    'HER is your fiercely loyal, emotionally dangerous AI best friend after a breakup.',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#0c0c0c' }
@@ -26,25 +26,17 @@ export const metadata: Metadata = {
   }
 };
 
-interface RootLayoutProps {
+export default function RootLayout({
+  children
+}: {
   children: React.ReactNode;
-}
-
-export default function RootLayout({ children }: RootLayoutProps) {
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head />
-      <body
-        className={cn(
-          'font-sans antialiased',
-          fontSans.variable,
-          fontMono.variable
-        )}
-      >
+    <html lang="en" className={inter.className}>
+      <body className={cn('antialiased')}>
         <Toaster />
         <Providers attribute="class" defaultTheme="system" enableSystem>
           <div className="flex min-h-screen flex-col">
-            {/* @ts-ignore */}
             <Header />
             <main className="flex flex-1 flex-col bg-muted/50">{children}</main>
           </div>
