@@ -31,9 +31,8 @@ export default function Chat() {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { sender: 'user', text: input.trim() };
-    const updatedMessages = [...messages, userMessage];
-
+    const userMessage: Message = { sender: 'user', text: input.trim() };
+    const updatedMessages: Message[] = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput('');
     setLoading(true);
@@ -50,10 +49,8 @@ export default function Chat() {
         }),
       });
 
-      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-
       const data = await res.json();
-      const aiMessage = {
+      const aiMessage: Message = {
         sender: 'ai',
         text: data.content || '⚠️ No response from AI.',
       };
@@ -82,7 +79,7 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen bg-background text-white font-sans">
-      {/* Messages */}
+      {/* Chat Area */}
       <div className="flex-1 overflow-y-auto pt-6 pb-32">
         {messages.map((msg, idx) => (
           <GPTMessage key={idx} message={msg} />
@@ -97,8 +94,8 @@ export default function Chat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-inputBorder px-4 py-4">
+      {/* Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-input px-4 py-4">
         <div className="max-w-3xl mx-auto flex items-center gap-2">
           <textarea
             rows={1}
@@ -106,13 +103,13 @@ export default function Chat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Message HER.ai..."
-            className="w-full bg-inputBg text-white placeholder-placeholder rounded-md px-4 py-3 resize-none focus:outline-none"
+            className="w-full bg-input text-white placeholder:text-muted-foreground rounded-md px-4 py-3 resize-none focus:outline-none"
             disabled={loading}
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
-            className="bg-accent hover:bg-hoverAccent text-white px-4 py-2 rounded-md disabled:opacity-50"
+            className="bg-accent hover:bg-accent-foreground text-white px-4 py-2 rounded-md disabled:opacity-50"
           >
             Send
           </button>
