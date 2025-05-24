@@ -69,7 +69,7 @@ const TypingDots = () => {
 
 // Component for rendering a single chat message
 const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLoading }: MessageBubbleProps) => {
-  const messageRef = useRef(null);
+  const messageRef = useRef<HTMLDivElement>(null); // Added type for messageRef
   const [displayedText, setDisplayedText] = useState('');
 
   useEffect(() => {
@@ -99,7 +99,7 @@ const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLo
     setAnimateIn(true);
   }, []);
 
-  const handleCopyCode = (code) => {
+  const handleCopyCode = (code: string) => { // Added type for code
     navigator.clipboard.writeText(code); // Using modern clipboard API
     // In a real app, you'd show a "Copied!" toast/message
   };
