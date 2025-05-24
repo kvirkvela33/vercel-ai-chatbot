@@ -11,6 +11,21 @@ import { SendHorizonal, Copy, Sparkles } from 'lucide-react';
 // or
 // yarn add react-markdown react-syntax-highlighter lucide-react
 
+// Define interfaces for message and component props
+interface Message {
+  sender: 'user' | 'ai';
+  text: string;
+  isStreaming?: boolean; // Optional, as it's primarily for AI messages during initial display
+}
+
+interface MessageBubbleProps {
+  message: Message;
+  isStreaming: boolean;
+  onSummarize: (text: string) => void;
+  onElaborate: (text: string) => void;
+  isLLMLoading: boolean;
+}
+
 // Custom component for the AI's avatar
 const AIAvatar = () => (
   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold mr-2">
@@ -53,7 +68,7 @@ const TypingDots = () => {
 };
 
 // Component for rendering a single chat message
-const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLoading }) => {
+const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLoading }: MessageBubbleProps) => {
   const messageRef = useRef(null);
   const [displayedText, setDisplayedText] = useState('');
 
@@ -174,12 +189,12 @@ const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLo
 
 // Main App Component
 const App = () => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]); // Explicitly type useState
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLLMLoading, setIsLLMLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null); // Type useRef
+  const textareaRef = useRef<HTMLTextAreaElement>(null); // Type useRef
 
   // Scroll to bottom of chat history
   const scrollToBottom = useCallback(() => {
@@ -200,7 +215,7 @@ const App = () => {
   }, [messages, isTyping, isLLMLoading, scrollToBottom]);
 
   // Helper function to call your /api/chat backend
-  const callChatBackend = async (prompt) => {
+  const callChatBackend = async (prompt: string) => { // Type prompt
     setIsLLMLoading(true); // Indicate LLM operation is in progress
     setIsTyping(true); // Show typing indicator
 
@@ -238,7 +253,7 @@ const App = () => {
   const handleSendMessage = async () => {
     if (input.trim() === '' || isLLMLoading) return;
 
-    const userMessage = { sender: 'user', text: input.trim() };
+    const userMessage: Message = { sender: 'user', text: input.trim() }; // Type userMessage
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput('');
 
@@ -246,13 +261,13 @@ const App = () => {
     await callChatBackend(input.trim());
   };
 
-  const handleSummarize = async (textToSummarize) => {
+  const handleSummarize = async (textToSummarize: string) => { // Type textToSummarize
     if (isLLMLoading) return;
     const prompt = `Summarize the following text concisely:\n\n${textToSummarize}`;
     await callChatBackend(prompt);
   };
 
-  const handleElaborate = async (textToElaborate) => {
+  const handleElaborate = async (textToElaborate: string) => { // Type textToElaborate
     if (isLLMLoading) return;
     const prompt = `Elaborate on the following text, providing more detail and context:\n\n${textToElaborate}`;
     await callChatBackend(prompt);
@@ -287,7 +302,7 @@ const App = () => {
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => { // Type event
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault(); // Prevent new line in textarea
       handleSendMessage();
@@ -303,7 +318,7 @@ const App = () => {
             <MessageBubble
               key={index}
               message={msg}
-              isStreaming={msg.isStreaming}
+              isStreaming={msg.isStreaming || false} // Ensure isStreaming is always boolean
               onSummarize={handleSummarize}
               onElaborate={handleElaborate}
               isLLMLoading={isLLMLoading}
