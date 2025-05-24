@@ -12,8 +12,10 @@ const GPTMessage = ({ message }: { message: Message }) => {
   return (
     <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} px-4 py-1`}>
       <div
-        className={`max-w-[680px] px-4 py-3 text-sm leading-relaxed shadow-md rounded-lg whitespace-pre-wrap font-sans ${
-          isUser ? 'bg-surfaceUser text-white' : 'bg-surface text-white'
+        className={`max-w-[680px] px-4 py-2 text-sm leading-relaxed border rounded-xl shadow-sm font-sans whitespace-pre-wrap ${
+          isUser
+            ? 'bg-surfaceUser text-white border-neutral-700'
+            : 'bg-surface text-white border-neutral-800'
         }`}
       >
         {message.text}
@@ -44,22 +46,21 @@ export default function Chat() {
         body: JSON.stringify({
           messages: updatedMessages.map((msg) => ({
             role: msg.sender === 'user' ? 'user' : 'assistant',
-            content: msg.text,
-          })),
-        }),
+            content: msg.text
+          }))
+        })
       });
 
       const data = await res.json();
       const aiMessage: Message = {
         sender: 'ai',
-        text: data.content || '⚠️ No response from AI.',
+        text: data.content || '⚠️ No response from AI.'
       };
       setMessages((prev) => [...prev, aiMessage]);
-    } catch (err) {
-      console.error('Backend error:', err);
+    } catch {
       setMessages((prev) => [
         ...prev,
-        { sender: 'ai', text: '⚠️ Failed to connect to AI backend.' },
+        { sender: 'ai', text: '⚠️ Failed to connect to AI backend.' }
       ]);
     } finally {
       setLoading(false);
@@ -80,13 +81,13 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-screen bg-background text-white font-sans">
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto pt-6 pb-32">
+      <div className="flex-1 overflow-y-auto pt-6 pb-32 space-y-2">
         {messages.map((msg, idx) => (
           <GPTMessage key={idx} message={msg} />
         ))}
         {loading && (
           <div className="px-4 py-1 flex justify-start">
-            <div className="bg-surface text-white px-4 py-3 rounded-lg text-sm animate-pulse">
+            <div className="bg-surface text-white px-4 py-2 rounded-lg text-sm border border-neutral-800 animate-pulse">
               Typing...
             </div>
           </div>
@@ -94,8 +95,8 @@ export default function Chat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-input px-4 py-4">
+      {/* Input */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-neutral-800 px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center gap-2">
           <textarea
             rows={1}
@@ -103,13 +104,13 @@ export default function Chat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Message HER.ai..."
-            className="w-full bg-input text-white placeholder:text-muted-foreground rounded-md px-4 py-3 resize-none focus:outline-none"
+            className="w-full bg-input text-white placeholder:text-neutral-400 rounded-md px-4 py-3 resize-none border border-neutral-700 focus:outline-none"
             disabled={loading}
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
-            className="bg-accent hover:bg-accent-foreground text-white px-4 py-2 rounded-md disabled:opacity-50"
+            className="bg-accent hover:bg-hoverAccent text-white px-4 py-2 rounded-md disabled:opacity-50"
           >
             Send
           </button>
