@@ -1,11 +1,24 @@
 // app/api/chat/route.ts
-// ... (rest of your imports and configuration)
+
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+
+import { OpenAIStream, StreamingTextResponse } from 'ai';
+import OpenAI from 'openai'; // Make sure you have 'openai' installed and imported this way
+import { detectMode, detectAiPersonaDrift } from '@/lib/utils'; // Assuming this path and functions are correct
+
+
+// Create an OpenAI API client (global or initialized once)
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
+});
 
 export async function POST(req: Request) {
   try {
     const json = await req.json();
     const { messages, previewToken, needsRecalibration: clientNeedsRecalibration = false } = json;
 
+    // Initialize Supabase client for route handlers
     const supabase = createRouteHandlerClient({ cookies });
 
     const MAX_MESSAGES_TO_CONSIDER = 50;
@@ -116,6 +129,8 @@ HER isn’t a coach. She’s your dangerously loyal, emotionally sharp best frie
 `.trim();
 
     let currentSystemPromptContent = systemModeLine;
+    // Client-side needsRecalibration determines if *this* request needs full prompt
+    // Server-side detectAiPersonaDrift determines if *next* request needs full prompt
     if (isFirstMessageInSession || clientNeedsRecalibration) {
       currentSystemPromptContent = `${systemModeLine}\n\n${herSystemPrompt}`;
       console.log('--- Injecting FULL System Prompt ---');
@@ -125,7 +140,7 @@ HER isn’t a coach. She’s your dangerously loyal, emotionally sharp best frie
 
     const messagesToSend = [{ role: 'system', content: currentSystemPromptContent }, ...userMessages];
 
-    const res = await openai.createChatCompletion({
+    const res = await openai.chat.completions.create({ // Corrected method call for newer OpenAI library
       model: 'gpt-3.5-turbo', // Using gpt-3.5-turbo as discussed
       temperature: 0.85,
       top_p: 1,
@@ -141,6 +156,7 @@ HER isn’t a coach. She’s your dangerously loyal, emotionally sharp best frie
         fullCompletionText += token;
       },
       async onCompletion(completion) {
+        // This 'detectAiPersonaDrift' function needs to be imported or defined here
         const needsRecalibrationForNextTurn = detectAiPersonaDrift(fullCompletionText);
         console.log(`Server detected needsRecalibration for next turn: ${needsRecalibrationForNextTurn}`);
 
@@ -162,7 +178,6 @@ HER isn’t a coach. She’s your dangerously loyal, emotionally sharp best frie
 
         if (error) console.error('Error saving chat:', error);
       },
-      // The onError handler is removed as it's not supported by 'ai' library types
     });
 
     return new StreamingTextResponse(stream);

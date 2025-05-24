@@ -36,7 +36,7 @@ function TypingMessage({ content }: { content: string }) {
 export function Chat({ id, initialMessages }: ChatProps) {
   const [needsRecalibration, setNeedsRecalibration] = useState(true);
   const [currentChatId, setCurrentChatId] = useState(id);
-  const [currentChatTitle, setCurrentChatTitle] = useState('Untitled Chat');
+  const [currentChatTitle, setCurrentChatTitle] = useState('Untitled Chat'); // This should ideally come from props or be dynamically set
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null); // Ref for the textarea
