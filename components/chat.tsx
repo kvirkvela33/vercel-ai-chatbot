@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat, Message } from 'ai/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 
 interface ChatProps {
@@ -9,10 +9,29 @@ interface ChatProps {
   initialMessages: Message[];
 }
 
+// Typing animation component
+function TypingMessage({ content }: { content: string }) {
+  const [displayedText, setDisplayedText] = useState('');
+
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedText(content.slice(0, i + 1));
+      i++;
+      if (i >= content.length) clearInterval(interval);
+    }, 15); // Adjust typing speed here
+
+    return () => clearInterval(interval);
+  }, [content]);
+
+  return <span>{displayedText}</span>;
+}
+
 export function Chat({ id, initialMessages }: ChatProps) {
   const [needsRecalibration, setNeedsRecalibration] = useState(false);
   const [currentChatId, setCurrentChatId] = useState(id);
   const [currentChatTitle, setCurrentChatTitle] = useState('Untitled Chat');
+  const [isHerTyping, setIsHerTyping] = useState(false);
 
   const {
     messages,
@@ -55,6 +74,7 @@ export function Chat({ id, initialMessages }: ChatProps) {
     };
 
     append(newUserMessage);
+    setIsHerTyping(true);
 
     const messagesForApi = [
       ...messages.map(m => ({ role: m.role, content: m.content })),
@@ -109,6 +129,8 @@ export function Chat({ id, initialMessages }: ChatProps) {
         role: 'assistant',
         content: `Error: ${e.message}`
       });
+    } finally {
+      setIsHerTyping(false);
     }
   };
 
@@ -119,16 +141,27 @@ export function Chat({ id, initialMessages }: ChatProps) {
           Error: {error.message}
         </div>
       )}
+
       {messages.length > 0 ? (
-        messages.map((m) => (
-          <div key={m.id} className="whitespace-pre-wrap mb-2">
-            <strong>{m.role === 'user' ? 'You: ' : 'HER: '}</strong>
-            {m.content}
-          </div>
-        ))
+        <>
+          {messages.map((m) => (
+            <div key={m.id} className="whitespace-pre-wrap mb-2">
+              <strong>{m.role === 'user' ? 'You: ' : 'HER: '}</strong>
+              {m.role === 'assistant' ? (
+                <TypingMessage content={m.content} />
+              ) : (
+                <span>{m.content}</span>
+              )}
+            </div>
+          ))}
+          {isHerTyping && (
+            <div className="text-sm italic text-gray-400 mb-2">HER is typing…</div>
+          )}
+        </>
       ) : (
         <div className="text-center text-gray-500">Start chatting with HER...</div>
       )}
+
       <form onSubmit={customHandleSubmit}>
         <input
           className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
@@ -137,9 +170,7 @@ export function Chat({ id, initialMessages }: ChatProps) {
           onChange={handleInputChange}
           disabled={isLoading}
         />
-        <button type="submit" className="hidden">
-          Send
-        </button>
+        <button type="submit" className="hidden">Send</button>
       </form>
     </div>
   );
