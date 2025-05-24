@@ -1,51 +1,55 @@
-import { type Metadata } from 'next'
-import { notFound } from 'next/navigation'
+'use client'
 
-import { formatDate } from '@/lib/utils'
-import { getSharedChat } from '@/app/actions'
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { ChatList } from '@/components/chat-list'
+import { ChatListMessage } from '@/components/chat-list'
+import { Separator } from '@/components/ui/separator'
 import { FooterText } from '@/components/footer'
 
-export const runtime = 'edge'
-export const preferredRegion = 'home'
-
-interface SharePageProps {
-  params: {
-    id: string
-  }
+interface FetchedMessage {
+  role: 'user' | 'assistant'
+  content: string
 }
 
-export async function generateMetadata({
-  params
-}: SharePageProps): Promise<Metadata> {
-  const chat = await getSharedChat(params.id)
-
-  return {
-    title: chat?.title.slice(0, 50) ?? 'Chat'
-  }
+interface FetchedChat {
+  messages: FetchedMessage[]
 }
 
-export default async function SharePage({ params }: SharePageProps) {
-  const chat = await getSharedChat(params.id)
+export default function SharePage() {
+  const [chat, setChat] = useState<FetchedChat | null>(null)
+  const params = useParams()
 
-  if (!chat || !chat?.sharePath) {
-    notFound()
+  useEffect(() => {
+    async function fetchChat() {
+      const res = await fetch(`/api/chat/${params.id}`)
+      const data = await res.json()
+      setChat(data)
+    }
+
+    if (params.id) {
+      fetchChat()
+    }
+  }, [params.id])
+
+  if (!chat) {
+    return <div className="p-4 text-sm text-muted-foreground">Loading chat…</div>
   }
+
+  const convertedMessages: ChatListMessage[] = chat.messages.map((m, i) => ({
+    id: i,
+    sender: m.role,
+    text: m.content || '',
+  }))
 
   return (
     <>
-      <div className="flex-1 space-y-6">
-        <div className="px-4 py-6 border-b bg-background md:px-6 md:py-8">
-          <div className="max-w-2xl mx-auto md:px-6">
-            <div className="space-y-1 md:-mx-8">
-              <h1 className="text-2xl font-bold">{chat.title}</h1>
-              <div className="text-sm text-muted-foreground">
-                {formatDate(chat.createdAt)} · {chat.messages.length} messages
-              </div>
-            </div>
-          </div>
+      <div className="flex flex-col space-y-4 px-4">
+        <div className="text-center text-sm text-muted-foreground">
+          Shared chat link
         </div>
-        <ChatList messages={chat.messages} />
+        <Separator className="my-4" />
+        <ChatList messages={convertedMessages} />
       </div>
       <FooterText className="py-8" />
     </>

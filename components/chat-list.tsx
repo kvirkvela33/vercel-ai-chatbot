@@ -1,41 +1,27 @@
-// components/chat-list.tsx
+'use client'
 
-import React from 'react';
-import { Separator } from '@/components/ui/separator';
-import ChatMessage from '@/components/chat-message'; // ✅ FIXED
+import { Separator } from '@/components/ui/separator'
+import ChatMessage from '@/components/chat-message'
 
-export interface Message {
-  id: number;
-  sender: 'user' | 'assistant';
-  text: string;
+export interface ChatListMessage {
+  id: number
+  sender: 'user' | 'assistant'
+  text: string
 }
 
 export interface ChatListProps {
-  messages: Message[];
+  messages: ChatListMessage[]
 }
 
-export const ChatList: React.FC<ChatListProps> = ({ messages }) => {
-  const bottomRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
+export function ChatList({ messages }: ChatListProps) {
   return (
-    <div className="flex flex-col space-y-2 p-4">
-      {messages.length === 0 ? (
-        <div className="text-center text-gray-400">No messages yet</div>
-      ) : (
-        messages.map((msg) => (
-          <ChatMessage
-            key={msg.id}
-            sender={msg.sender}
-            text={msg.text}
-          />
-        ))
-      )}
-      <div ref={bottomRef} />
-      <Separator />
+    <div className="flex flex-col gap-4 px-4">
+      {messages.map((message) => (
+        <div key={message.id}>
+          <ChatMessage sender={message.sender} text={message.text} />
+          <Separator className="my-4" />
+        </div>
+      ))}
     </div>
-  );
-};
+  )
+}
