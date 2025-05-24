@@ -1,15 +1,16 @@
 'use client'; // This line is crucial for client-side rendering in Next.js App Router
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import ReactMarkdown, { Components } from 'react-markdown'; // Import Components type
+import ReactMarkdown, { Components } from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { SendHorizonal, Copy, Sparkles } from 'lucide-react';
+import { SendHorizonal, Copy, Sparkles, Sun, Moon, Mic, Search, Layout } from 'lucide-react'; // Added Mic, Search, Layout icons
+import { useTheme } from 'next-themes'; // Import useTheme hook
 
 // IMPORTANT: Ensure you have installed these packages:
-// npm install react-markdown react-syntax-highlighter lucide-react
+// npm install react-markdown react-syntax-highlighter lucide-react next-themes
 // or
-// yarn add react-markdown react-syntax-highlighter lucide-react
+// yarn add react-markdown react-syntax-highlighter lucide-react next-themes
 
 // Define interfaces for message and component props
 interface Message {
@@ -21,8 +22,8 @@ interface Message {
 interface MessageBubbleProps {
   message: Message;
   isStreaming: boolean;
-  onSummarize: (text: string) => void;
-  onElaborate: (text: string) => void;
+  onSummarize: (text: string) => void; // Keeping these props for now, but buttons are removed
+  onElaborate: (text: string) => void; // Keeping these props for now, but buttons are removed
   isLLMLoading: boolean;
 }
 
@@ -36,7 +37,7 @@ const AIAvatar = () => (
 // Component for the typing dots animation
 const TypingDots = () => {
   return (
-    <div className="flex items-center space-x-1 py-2 px-3 bg-gray-100 rounded-xl rounded-bl-sm shadow-sm max-w-xs">
+    <div className="flex items-center space-x-1 py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-xl rounded-bl-sm shadow-sm max-w-xs">
       <style jsx>{`
         @keyframes bounce {
           0%, 100% {
@@ -68,7 +69,7 @@ const TypingDots = () => {
 };
 
 // Component for rendering a single chat message
-const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLoading }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isStreaming, isLLMLoading }: MessageBubbleProps) => { // Removed onSummarize, onElaborate from destructuring
   const messageRef = useRef<HTMLDivElement>(null);
   const [displayedText, setDisplayedText] = useState('');
 
@@ -122,7 +123,7 @@ const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLo
       return !inline && match ? (
         <div className="relative my-2 rounded-md overflow-hidden">
           <SyntaxHighlighter
-            style={atomDark}
+            style={atomDark} // This style is dark, so it works well in both modes for code blocks
             language={match[1]}
             PreTag="div"
             {...props}
@@ -139,7 +140,7 @@ const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLo
           </button>
         </div>
       ) : (
-        <code className="bg-gray-200 text-gray-800 px-1 py-0.5 rounded font-mono text-sm" {...props}>
+        <code className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1 py-0.5 rounded font-mono text-sm" {...props}>
           {children}
         </code>
       );
@@ -169,30 +170,13 @@ const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLo
         className={`max-w-[70%] p-3 rounded-xl shadow-sm ${
           message.sender === 'user'
             ? 'bg-blue-600 text-white rounded-br-sm ml-auto'
-            : 'bg-gray-100 text-gray-800 rounded-bl-sm mr-auto'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-sm mr-auto'
         }`}
       >
         <ReactMarkdown components={components}>
           {displayedText}
         </ReactMarkdown>
-        {message.sender === 'ai' && (
-          <div className="flex justify-end mt-2 space-x-2">
-            <button
-              onClick={() => onSummarize(message.text)}
-              disabled={isLLMLoading}
-              className="flex items-center px-3 py-1 bg-blue-500 text-white text-xs rounded-full hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:text-gray-500"
-            >
-              <Sparkles size={12} className="mr-1" /> Summarize
-            </button>
-            <button
-              onClick={() => onElaborate(message.text)}
-              disabled={isLLMLoading}
-              className="flex items-center px-3 py-1 bg-green-500 text-white text-xs rounded-full hover:bg-green-600 transition-colors disabled:bg-gray-300 disabled:text-gray-500"
-            >
-              <Sparkles size={12} className="mr-1" /> Elaborate
-            </button>
-          </div>
-        )}
+        {/* Removed Summarize and Elaborate buttons */}
       </div>
     </div>
   );
@@ -200,12 +184,13 @@ const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLo
 
 // Main App Component
 const App = () => {
-  const [messages, setMessages] = useState<Message[]>([]); // Explicitly type useState
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLLMLoading, setIsLLMLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null); // Type useRef
-  const textareaRef = useRef<HTMLTextAreaElement>(null); // Type useRef
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { theme, setTheme } = useTheme();
 
   // Scroll to bottom of chat history
   const scrollToBottom = useCallback(() => {
@@ -226,7 +211,7 @@ const App = () => {
   }, [messages, isTyping, isLLMLoading, scrollToBottom]);
 
   // Helper function to call your /api/chat backend
-  const callChatBackend = async (prompt: string) => { // Type prompt
+  const callChatBackend = async (prompt: string) => {
     setIsLLMLoading(true); // Indicate LLM operation is in progress
     setIsTyping(true); // Show typing indicator
 
@@ -241,13 +226,12 @@ const App = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Assuming your /api/chat returns a JSON object with a 'content' field
       const data = await response.json();
       const aiResponseText = data.content || "Error: No response content from AI.";
 
       setMessages((prevMessages) => [
         ...prevMessages,
-        { sender: 'ai', text: aiResponseText, isStreaming: false }, // Set to false, as streaming is handled by backend
+        { sender: 'ai', text: aiResponseText, isStreaming: false },
       ]);
     } catch (error) {
       console.error("Error calling chat backend:", error);
@@ -264,25 +248,14 @@ const App = () => {
   const handleSendMessage = async () => {
     if (input.trim() === '' || isLLMLoading) return;
 
-    const userMessage: Message = { sender: 'user', text: input.trim() }; // Type userMessage
+    const userMessage: Message = { sender: 'user', text: input.trim() };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput('');
 
-    // Call your OpenAI backend via /api/chat
     await callChatBackend(input.trim());
   };
 
-  const handleSummarize = async (textToSummarize: string) => { // Type textToSummarize
-    if (isLLMLoading) return;
-    const prompt = `Summarize the following text concisely:\n\n${textToSummarize}`;
-    await callChatBackend(prompt);
-  };
-
-  const handleElaborate = async (textToElaborate: string) => { // Type textToElaborate
-    if (isLLMLoading) return;
-    const prompt = `Elaborate on the following text, providing more detail and context:\n\n${textToElaborate}`;
-    await callChatBackend(prompt);
-  };
+  // Removed handleSummarize and handleElaborate functions as buttons are gone
 
   const handleSuggestPrompt = async () => {
     if (isLLMLoading) return;
@@ -303,35 +276,46 @@ const App = () => {
 
       const data = await response.json();
       const generatedPrompt = data.content ? data.content.trim() : "";
-      setInput(generatedPrompt); // Set the generated prompt into the input box
+      setInput(generatedPrompt);
     } catch (error) {
       console.error("Error calling chat backend for prompt suggestion:", error);
-      // Optionally, show a message to the user
     } finally {
       setIsLLMLoading(false);
       setIsTyping(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => { // Type event
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault(); // Prevent new line in textarea
+      e.preventDefault();
       handleSendMessage();
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 font-inter antialiased">
+    // Apply dark mode classes to the main container
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 font-inter antialiased text-gray-900 dark:text-gray-100">
+      {/* Theme Toggle Button */}
+      <div className="absolute top-4 right-4 z-10">
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          title="Toggle theme"
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+      </div>
+
       {/* Chat History Area */}
-      <div className="flex-grow overflow-y-auto p-4 md:p-6 pb-20"> {/* pb-20 to ensure space for fixed input */}
+      <div className="flex-grow overflow-y-auto p-4 md:p-6 pb-20">
         <div className="max-w-screen-md mx-auto">
           {messages.map((msg, index) => (
             <MessageBubble
               key={index}
               message={msg}
-              isStreaming={msg.isStreaming || false} // Ensure isStreaming is always boolean
-              onSummarize={handleSummarize}
-              onElaborate={handleElaborate}
+              isStreaming={msg.isStreaming || false}
+              onSummarize={() => {}} // Pass empty functions as props are still expected by interface
+              onElaborate={() => {}} // Pass empty functions
               isLLMLoading={isLLMLoading}
             />
           ))}
@@ -341,31 +325,22 @@ const App = () => {
               <TypingDots />
             </div>
           )}
-          <div ref={messagesEndRef} /> {/* Scroll target */}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
       {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 md:p-6 border-t border-gray-200">
-        <div className="max-w-screen-md mx-auto flex flex-col items-end">
-          {/* Suggest Prompt Button */}
-          <button
-            onClick={handleSuggestPrompt}
-            disabled={isLLMLoading}
-            className="mb-2 px-4 py-2 bg-purple-500 text-white text-sm rounded-full hover:bg-purple-600 transition-colors disabled:bg-gray-300 disabled:text-gray-500 flex items-center self-start"
-          >
-            <Sparkles size={16} className="mr-2" /> Suggest Prompt
-          </button>
-
-          <div className="flex items-end w-full">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 shadow-lg p-4 md:p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="max-w-screen-md mx-auto flex flex-col items-center"> {/* Centered content */}
+          <div className="flex items-end w-full max-w-2xl bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-3 border border-gray-200 dark:border-gray-700"> {/* Wider input container */}
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isLLMLoading ? "Generating response..." : "Message HER.ai..."}
+              placeholder={isLLMLoading ? "Generating response..." : "Ask Gemini"} // Updated placeholder
               rows={1}
-              className="flex-grow resize-none overflow-hidden bg-gray-100 rounded-xl py-3 px-4 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+              className="flex-grow resize-none overflow-hidden bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition-all duration-200"
               style={{ maxHeight: '120px' }}
               disabled={isLLMLoading}
             />
@@ -374,12 +349,34 @@ const App = () => {
               disabled={input.trim() === '' || isLLMLoading}
               className={`ml-3 p-2 rounded-full transition-colors duration-200 ${
                 input.trim() === '' || isLLMLoading
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  : 'text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
               title="Send message"
             >
               <SendHorizonal size={24} />
+            </button>
+            <button
+              className="ml-2 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="Voice input"
+              disabled={isLLMLoading}
+            >
+              <Mic size={24} />
+            </button>
+          </div>
+          {/* Buttons below the input field */}
+          <div className="flex mt-3 space-x-4">
+            <button
+              className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              disabled={isLLMLoading}
+            >
+              <Search size={16} className="mr-2" /> Deep Research
+            </button>
+            <button
+              className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              disabled={isLLMLoading}
+            >
+              <Layout size={16} className="mr-2" /> Canvas
             </button>
           </div>
         </div>
