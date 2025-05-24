@@ -1,7 +1,7 @@
 'use client'; // This line is crucial for client-side rendering in Next.js App Router
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { Components } from 'react-markdown'; // Import Components type
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { SendHorizonal, Copy, Sparkles } from 'lucide-react';
@@ -69,7 +69,7 @@ const TypingDots = () => {
 
 // Component for rendering a single chat message
 const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLoading }: MessageBubbleProps) => {
-  const messageRef = useRef<HTMLDivElement>(null); // Added type for messageRef
+  const messageRef = useRef<HTMLDivElement>(null);
   const [displayedText, setDisplayedText] = useState('');
 
   useEffect(() => {
@@ -99,13 +99,24 @@ const MessageBubble = ({ message, isStreaming, onSummarize, onElaborate, isLLMLo
     setAnimateIn(true);
   }, []);
 
-  const handleCopyCode = (code: string) => { // Added type for code
+  const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code); // Using modern clipboard API
     // In a real app, you'd show a "Copied!" toast/message
   };
 
-  const components = {
-    code({ node, inline, className, children, ...props }) {
+  const components: Components = { // Apply Components type here
+    code({
+      node,
+      inline,
+      className,
+      children,
+      ...props
+    }: {
+      node: any; // 'node' type can be complex, 'any' is often used here for simplicity
+      inline?: boolean;
+      className?: string;
+      children: React.ReactNode; // Use React.ReactNode for children
+    }) {
       const match = /language-(\w+)/.exec(className || '');
       const codeContent = String(children).replace(/\n$/, '');
       return !inline && match ? (
